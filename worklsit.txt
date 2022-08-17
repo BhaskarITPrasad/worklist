@@ -1,0 +1,645 @@
+---------------------------------------------case worklist------------------------------------------------------
+
+<template>
+
+    
+    <lightning-card variant="Narrow">
+        <lightning-layout multiple-rows>
+            
+            <lightning-layout-item
+                size="12"
+                padding="around-small"
+            >
+            
+            
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <td colspan="3">
+                                <lightning-button
+                                    variant="base"
+                                    label="Reset to Default Filter(s)"
+                                    title="Reset to Default Filter(s)"
+                                    
+                                    onclick={clearSearch}
+                                ></lightning-button>
+                                
+                                
+                            </td>
+                            
+                        </tr>
+                        <tr class="slds-line-height_reset">
+                            <td colspan="3">
+                                <div class="slds-form-element slds-form-element_horizontal" >
+                                    <label class="slds-form-element__label"><strong>Select Case Type</strong></label>
+                                    
+                                <lightning-combobox
+                                    name="typu"
+                                    value={typu}
+                                    placeholder="--Select Case Type--"
+                                    options={caseTypePickListValues}
+                                    onchange={handleChange}
+                                ></lightning-combobox>  
+                            
+                                </div>
+                                <div class="slds-form-element slds-form-element_horizontal" >
+                                    <label class="slds-form-element__label"><strong>Select Case Type</strong></label>
+                                    <label class="slds-form-element__label"><strong>Sub Category</strong></label>
+                                     <lightning-combobox
+                                    name="cat"
+                                    value={cat}
+                                    placeholder="--Search Priority--"
+                                    options={categoryPickListValues}
+                                    onchange={handleChange}
+                                    read-only={readOnlyBool}
+                                ></lightning-combobox>
+                                </div>
+                                <div class="slds-form-element slds-form-element_horizontal" >
+                                    <label class="slds-form-element__label"><strong>Select Case Status</strong></label>
+                                   
+                                    <lightning-combobox
+                                    name="status"
+                                    value={status}
+                                    placeholder="--Search Status--"
+                                    options={statusPickListValues}
+                                    onchange={handleChange}
+                                    read-only={readOnlyBool}
+                                    ></lightning-combobox>
+                                </div>
+                             </td>
+                            <td colspan="3">
+                                <div class="slds-form-element slds-form-element_horizontal" >
+                                    <label class="slds-form-element__label"><strong>Search Case Number</strong></label>
+                                    
+                                    <lightning-input
+                                    type="text"
+                                    variant="standard"
+                                    name="casenumber"
+                                    value={casenumber}
+                                    placeholder="---Type case number---"
+                                    onkeyup={handleKeyUp}
+                                    disabled={readOnlyBool}
+                                    ></lightning-input>
+                                </div>
+                                <div class="slds-form-element slds-form-element_horizontal" >
+                                    <label class="slds-form-element__label"><strong>Search Account</strong></label>
+                                    
+                                <lightning-input
+                                    type="text"
+                                    variant="standard"
+                                    name="accountname"
+                                    value={accountname}
+                                    placeholder="---Type Account Name---"
+                                    onkeyup={handleKeyUp}
+                                ></lightning-input>
+                                </div>
+                                <div class="slds-form-element slds-form-element_horizontal" >
+                                    <label class="slds-form-element__label"><strong>Search Contact</strong></label>
+                                <lightning-input
+                                    type="text"
+                                    variant="standard"
+                                    name="contactname"
+                                    value={contactname}
+                                    placeholder="---Type Contact Name---"
+                                    onkeyup={handleKeyUp}
+                                    disabled={readOnlyBool}
+                                ></lightning-input>
+                                </div>
+                            </td>
+                        </tr>                       
+                    </thead>
+                </table>            
+            </lightning-layout-item>
+        </lightning-layout>      
+    </lightning-card>
+    <c-casefilterchild-l-w-c typu={typu}   rst={rst}  cat={cat}  status={status} casenumber={casenumber} accountname={accountname} contactname={contactname}></c-casefilterchild-l-w-c>
+</template>
+
+
+
+
+
+
+
+
+import { LightningElement, wire, api, track } from "lwc";
+import getCases from "@salesforce/apex/ats_FilteredTableController.getCases";
+import { NavigationMixin } from "lightning/navigation";
+import { refreshApex } from "@salesforce/apex";
+import { ShowToastEvent } from "lightning/platformShowToastEvent";
+import { getPicklistValues } from "lightning/uiObjectInfoApi";
+import STATUS_FIELD from "@salesforce/schema/Case.Status";
+import TYPE_FIELD from "@salesforce/schema/Case.Case_Type__c";
+import SUB_CAT from "@salesforce/schema/Case.Sub_Category_Type__c";
+
+
+
+
+
+
+
+
+export default class Case_Filter extends NavigationMixin(LightningElement) 
+{
+    
+
+
+
+
+    @track readOnlyBool=false;
+    @track readOnlyBool2=true;
+
+    statusPickListValues;
+    categoryPickListValues;
+    caseTypePickListValues;
+
+    casenumber = "";
+    accountname = "";
+    contactname = "";
+    rst=true;
+    cat = null;
+    status = null;
+    typu="Generic";
+
+
+
+
+    @wire(getPicklistValues, {
+        recordTypeId: "012000000000000AAA",
+        fieldApiName: STATUS_FIELD
+    })
+    statusPickLists({ error, data }) {
+        if (error) {
+            console.error("error", error);
+            
+        } else if (data) {
+            this.statusPickListValues = [
+                { label: "", value: null },
+                ...data.values
+            ];
+        }
+        
+    }
+
+    
+    @wire(getPicklistValues, {
+        recordTypeId: "012000000000000AAA",
+        fieldApiName: SUB_CAT
+    })
+    categoryPickListPickLists({ error, data }) {
+        if (error) {
+            console.error("error", error);
+            
+        } else if (data) {
+            this.categoryPickListValues = [
+                { label: "", value: null },
+                ...data.values
+            ];
+        }
+    }
+    
+    
+
+    @wire(getPicklistValues, {
+        recordTypeId: "012000000000000AAA",
+        fieldApiName: TYPE_FIELD
+    })
+    caseTypePickListValues({ error, data }) {
+        if (error) {
+            console.error("error", error);
+            
+        } else if (data) {
+            
+            this.caseTypePickListValues = [
+                { 
+                label: "", value: null },
+                ...data.values
+            ];
+        }
+    }
+    
+
+
+
+    
+    handleChange(event) {
+        this[event.target.name] = event.target.value;
+        console.log("change", this[event.target.name]);
+        this.readOnlyBool=false;
+        this.rst=true;
+        
+    }
+
+    handleKeyUp(event) {
+        clearTimeout(this.typingTimer);
+        let value = event.target.value;
+        let name = event.target.name;
+
+        this.typingTimer = setTimeout(() => {
+            this[name] = value;
+        }, this.doneTypingInterval);
+        this.readOnlyBool2=false;
+        this.rst=true;
+    }
+
+    clearSearch() {
+        this.casenumber = "";
+        this.accountname = "";
+        this.contactname = "";
+        this.status = null;
+        this.cat= null;
+        this.typu=null;
+        this.readOnlyBool=true;
+        this.readOnlyBool2=true;
+        this.rst=false;
+    }
+
+ 
+    handleNavigate(event) {
+        event.preventDefault();
+        this[NavigationMixin.Navigate]({
+            type: "standard__recordPage",
+            attributes: {
+                actionName: "view",
+                recordId: event.target.dataset.id
+                
+            }
+        });
+
+        
+    }
+
+
+    
+    
+}
+
+
+---------------------------------------------case worklist child------------------------------------------------------
+
+
+import getCases from "@salesforce/apex/ats_FilteredTableController.getCases";
+import { LightningElement, wire, api, track } from "lwc";
+import { NavigationMixin } from "lightning/navigation";
+import { refreshApex } from "@salesforce/apex";
+import { ShowToastEvent } from "lightning/platformShowToastEvent";
+export default class CasefilterchildLWC extends LightningElement {
+    @track cols=[
+
+        { label: 'Case Number',fieldName: "RecordIds", 
+        type: "url",  
+        typeAttributes: { label: { fieldName: "CaseNumber" }, tooltip:"Casenumber", target: "_blank" }, sortable: "true"
+       },
+        { label: 'Created Date', fieldName: 'Case_Date__c',sortable: "true" },
+        {label: 'TSYS Account ID',fieldName: 'TSYS_External_Account_ID__c',    sortable: "true" },
+        { label: 'Case Type', fieldName: 'Case_Type__c',sortable: "true" },
+        { label: 'Sub catergory', fieldName: 'Sub_Category_Type__c',sortable: "true" },
+        { label: 'Status', fieldName: 'Status' ,sortable: "true"},
+        { label: 'Assigned User', fieldName: 'Case_Assign_User_Name__c' ,sortable: "true"},
+        { label: 'Pend Until', fieldName: 'Pending_Until_DT__c ' ,sortable: "true"}    
+    
+    ];
+    // Parent to child communication purpose
+    @track len;
+    @track a='';
+    @track errorMsg = '';
+    @track data;
+    @track count=0;
+    wiredchildCases;
+    @track rcount=0;
+    @api cat = null;
+    @api status = null;
+    @api typu=null;
+    @api rst=false;
+    @api casenumber=null;
+    @api accountname=null;
+    @api contactname=null;
+    
+    // pagination
+    @track vpagesize='10';
+    @track startingRecord = 0;
+    @track page=1;
+    @track endingRecord;
+    @track totalRecordCount;
+    @track totalPage=0;
+    @track pageSize;
+    @track items;
+
+    get comboBoxOptions() {
+        var pageLimitList = [
+            { label: '5', value: '5' },
+            { label: '10', value: '10' },
+            { label: '20', value: '20' },
+            { label: '30', value: '30' },
+            { label: '50', value: '50' },
+            { label: '100', value: '100' }
+
+        ];
+        return pageLimitList;
+    }
+
+    
+
+ 
+
+    
+    @wire(getCases, {
+        casenumber: "$casenumber",
+        accountname: "$accountname",
+        contactname: "$contactname",
+        cat: "$cat",
+        status: "$status",
+        typu: "$typu",
+        
+    })
+    
+
+    wiredSObjects(result) {
+        console.log("wire getting called");
+        this.wiredCases = result;
+        
+        if (result.data) {
+            this.len=result.data.length;
+            //this is for simple lightning data table
+            //this.data=result.data;
+            this.pageSize=this.vpagesize;
+            this.items = result.data;
+            this.totalRecordCount = result.data.length;
+            this.totalPage = Math.ceil(this.totalRecordCount/this.pageSize);
+            this.count=this.count+1;
+
+           this.a=result.data.toString();
+           if(this.a)
+           {
+            this.errorMsg='';
+            this.vpagesize='10';
+            if(this.rcount!=this.count)
+            {
+                this.page=1;
+                this.vpagesize='10';
+                this.pageSize=this.vpagesize;
+                this.startingRecord=1;
+                this.displayRecordPerPage(this.page);
+                this.rcount=this.count;
+            }
+            
+           }
+           else
+           {
+            this.data = this.items.slice(0,0);
+            this.errorMsg="NO CASE RECORDS FOUND";
+
+           }
+            
+
+
+
+        }
+        
+
+    }
+
+    handleRowAction(event){
+        const dataRow = event.detail.row;
+        window.console.log('dataRow@@ ' + dataRow);
+        this.contactRow=dataRow;
+        window.console.log('contactRow## ' + dataRow);
+        this.modalContainer=true;
+     }
+   
+    handleSortdata(event) {
+        // field name
+        this.sortBy = event.detail.fieldName;
+
+        // sort direction
+        this.sortDirection = event.detail.sortDirection;
+
+        // calling sortdata function to sort the data based on direction and selected field
+        this.sortData(event.detail.fieldName, event.detail.sortDirection);
+    }
+    sortData(fieldname, direction) 
+    {
+        // serialize the data before calling sort function
+        let parseData = JSON.parse(JSON.stringify(this.data));
+
+        // Return the value stored in the field
+        let keyValue = (a) => {
+            return a[fieldname];
+        };
+
+        // cheking reverse direction 
+        let isReverse = direction === 'asc' ? 1: -1;
+
+        // sorting data 
+        parseData.sort((x, y) => {
+            x = keyValue(x) ? keyValue(x) : ''; // handling null values
+            y = keyValue(y) ? keyValue(y) : '';
+
+            // sorting values based on direction
+            return isReverse * ((x > y) - (y > x));
+        });
+
+        // set the sorted data to data table data
+        this.data = parseData;
+
+    }
+    
+
+    handleLimitChange(event){
+        this.page=1;
+        this.vpagesize=event.target.value;
+        this.pageSize=this.vpagesize;
+        //this.endingRecord=this.vpagesize;
+        this.startingRecord=1;
+        this.displayRecordPerPage(this.page);
+        this.totalPage = Math.ceil(this.totalRecordCount/this.pageSize);
+
+    }
+
+
+
+    previousHandler(event){
+
+        console.log("Previous button is working");
+        if(this.page > 1){
+            this.page = this.page - 1;
+            this.displayRecordPerPage(this.page);
+        }
+        
+    }
+
+    nextHandler(event){
+        
+        console.log("Next button is working");
+        if(this.page < this.totalPage && this.page != this.totalPage){
+            this.page = this.page + 1;
+            this.displayRecordPerPage(this.page);
+        } 
+    }
+
+    displayRecordPerPage(page){
+        //this.startingRecord = (page-1)*this.vpagesize;
+        //this.endingRecord = page * this.vpagesize;
+
+        this.startingRecord = (page-1)*this.pageSize;
+        this.endingRecord = page * this.pageSize;
+        this.endingRecord = (this.endingRecord > this.totalRecordCount)?this.totalRecordCount:this.endingRecord;
+        this.data = this.items.slice(this.startingRecord,this.endingRecord);
+        
+        if(this.data)
+        {
+        var tempOppList = [];  
+        for (var i = 0; i < this.data.length; i++) {  
+        let tempRecord = Object.assign({}, this.data[i]); //cloning object  
+        tempRecord.RecordIds = "/" + tempRecord.Id;  
+        tempOppList.push(tempRecord);  
+        }
+        }  
+        this.data = tempOppList; 
+        //alert(this.data.CaseNumber);
+        this.startingRecord = this.startingRecord + 1; 
+        
+        
+    }
+    
+ 
+    handleNavigate(event) {
+        event.preventDefault();
+        this[NavigationMixin.Navigate]({
+            type: "standard__recordPage",
+            attributes: {
+                actionName: "view",
+                recordId: event.target.dataset.id
+                
+            }
+        });
+
+        
+    }
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/**
+ * @description       : 
+ * @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+ * @group             : 
+ * @last modified on  : 08-16-2022
+ * @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+**/
+
+public with sharing class ats_FilteredTableController {
+    @AuraEnabled(cacheable=true)
+    public static List<Case> getCases(
+        String casenumber,
+        String accountname,
+        String contactname,
+        String cat,
+        String status,
+        String typu
+        
+        
+    ) {
+        String query;
+        String condition = (String.isNotBlank(casenumber)
+            ? 'CaseNumber LIKE \'' + '%' + casenumber + '%\''
+            : '');
+
+        condition += (String.isNotBlank(accountname)
+            ? (String.isNotBlank(condition) ? +' AND ' : '') +
+              ' Accountname__c LIKE \'' +
+              '%' +
+              accountname +
+              '%\''
+            : '');
+
+        condition += (String.isNotBlank(contactname)
+            ? (String.isNotBlank(condition) ? +' AND ' : '') +
+              ' Contactname__c LIKE \'' +
+              '%' +
+              contactname +
+              '%\''
+            : '');
+
+        condition += (String.isNotBlank(cat)
+            ? (String.isNotBlank(condition) ? +' AND ' : '') +
+              ' Sub_Category_Type__c LIKE \'' +
+              '%' +
+              cat +
+              '%\''
+            : '');
+
+
+        condition += (String.isNotBlank(status)
+            ? (String.isNotBlank(condition) ? +' AND ' : '') +
+              ' Status LIKE \'' +
+              '%' +
+              status +
+              '%\''
+            : '');
+
+        condition += (String.isNotBlank(typu)
+            ? (String.isNotBlank(condition) ? +' AND ' : '') +
+              ' Case_Type__c LIKE \'' +
+              '%' +
+              typu +
+              '%\''
+            : '');
+
+
+        //System.debug('condition ' + condition);
+        if (String.isNotBlank(condition))
+         {
+            query ='SELECT CaseNumber,Case_Date__c,TSYS_External_Account_ID__c,Case_Type__c,Sub_Category_Type__c,Status,Case_Assign_User_Name__c,Pending_Until_DT__c FROM Case  WHERE ' +condition +' ORDER BY CaseNumber';
+            //query = query +'WITH SECURITY_ENFORCED';
+         } 
+        
+        else
+        {
+            query='';
+            
+            
+        }
+        System.debug('query ' + query);
+        List<Case> records = Database.query(query);
+        
+            return records;
+        
+             
+        }
+
+
+    
+}
+
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+<apiVersion>55.0</apiVersion>
+<isExposed>true</isExposed>
+<targets>
+<target>lightning__AppPage</target>
+<target>lightning__RecordPage</target>
+<target>lightning__HomePage</target>
+<target>lightning__Tab</target>
+</targets>
+</LightningComponentBundle>
+
+
+
+
+
+
